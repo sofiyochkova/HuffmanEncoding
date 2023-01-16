@@ -1,17 +1,19 @@
-generateList :: String -> [Char] -> [(Char, Int)]
-generateList "" _ = []
-generateList (x:xs) res
-    | x `notElem` res = (x, 1 + count x xs) : generateList xs (x:res)
-    | otherwise = generateList xs res
+-- създаваме списък на броя на срещанията на всеки символ
+generateFrequencyList :: String -> [Char] -> [(Char, Int)]
+generateFrequencyList "" _ = []
+generateFrequencyList (x:xs) res
+    | x `notElem` res = (x, 1 + count x xs) : generateFrequencyList xs (x:res)
+    | otherwise = generateFrequencyList xs res
   where count a str = length (filter (== a) str)
 
 data Tree a = Empty | Node {root :: a, leftTree :: Tree a, rightTree :: Tree a} | Leaf {c :: Char,  root :: a}
-    deriving Read
+   deriving (Show, Read) 
 
-instance Show a => Show (Tree a) where
-    show Empty = "Empty"
-    show (Node a b c) = "(Tree " ++ show a ++ " (" ++ show b ++ ") " ++ "(" ++ show c ++ "))"
-    show (Leaf c a) = "Leaf " ++ show a ++ " " ++ show c
+-- алтернативно извеждане на дървото
+parseTree :: (Show a) => Tree a -> String
+parseTree Empty = "Empty"
+parseTree (Node a b c) = "(Tree " ++ show a ++ " (" ++ parseTree b ++ ") " ++ "(" ++ parseTree c ++ "))"
+parseTree (Leaf c a) = "Leaf " ++ show a ++ " " ++ show c
 
 instance Eq a => Eq (Tree a) where
     Empty == Empty = True
@@ -23,18 +25,15 @@ instance Ord a => Ord (Tree a) where
     Empty `compare` Empty = EQ
     (Node r1 _ _) `compare` (Node r2 _ _) = r1 `compare` r2
     (Leaf _ a) `compare` (Leaf _ b) = a `compare` b
-    _ `compare` _ = LT
+    _ `compare` _ = LT 
 
-createLeafList :: [(Char, Int)] -> [Tree Int]
+-- от създадения честотен списък правим списък от отделните листа на дървото
+createLeafList :: [(Char, a)] -> [Tree a]
 createLeafList [] = []
 createLeafList lst = map (uncurry Leaf) lst
 
-removeMin :: Eq a => Tree a -> [Tree a] -> [Tree a]
-removeMin _ [] = []
-removeMin a (x:xs) = if a == x then xs
-    else x : removeMin a xs
-
-createHuffmanTreeFromList :: [Tree Int] -> Tree Int
+-- от списъка с листа създаваме Хъфманово дърво
+createHuffmanTreeFromList :: (Num a, Ord a) => [Tree a] -> Tree a
 createHuffmanTreeFromList [] = Empty
 createHuffmanTreeFromList [a] = a
 createHuffmanTreeFromList list = createHuffmanTreeFromList $ Node (root min1 + root min2) min1 min2 : removeMin min2 rest
@@ -42,11 +41,18 @@ createHuffmanTreeFromList list = createHuffmanTreeFromList $ Node (root min1 + r
           min2 = minimum rest
           rest = removeMin min1 list
 
-createBinaryValues :: Tree Int -> String -> [(Char, String)]
-createBinaryValues Empty _ = []
-createBinaryValues (Node root l r) str = createBinaryValues l (str ++ "0") ++ createBinaryValues r (str ++ "1")
-createBinaryValues (Leaf c root) str = [(c, str)]
+          removeMin :: Eq a => Tree a -> [Tree a] -> [Tree a]
+          removeMin _ [] = []
+          removeMin a (x:xs) = if a == x then xs
+            else x : removeMin a xs
 
+-- обхождаме Хъфмановото дърво и от него създаваме списък от символ и съответния му булев низ
+generateBinaryValueList :: Tree a -> String -> [(Char, String)]
+generateBinaryValueList Empty _ = []
+generateBinaryValueList (Node root l r) str = generateBinaryValueList l (str ++ "0") ++ generateBinaryValueList r (str ++ "1")
+generateBinaryValueList (Leaf c root) str = [(c, str)]
+
+-- с помощта на списъка кодираме думата, получаваме булев низ
 encodeOriginalWord :: String -> [(Char, String)] -> String
 encodeOriginalWord "" _ = ""
 encodeOriginalWord word [] = word
@@ -57,18 +63,19 @@ encodeOriginalWord word (x:xs) = encodeOriginalWord (replaceLetter x word) xs
             | fst c == x = snd c ++ replaceLetter c xs
             | otherwise = x : replaceLetter c xs
 
--- трябва да взима и предикат за сравнение
+-- кодиране на дума
 huffmanEncode :: String -> (Tree Int, String)
 huffmanEncode "" = (Empty, [])
 huffmanEncode word = (huffmanTree, binaryString)
-        where frequencyList = generateList word ""
+        where frequencyList = generateFrequencyList word ""
               huffmanTree = createHuffmanTreeFromList $ createLeafList frequencyList
-              binValues = createBinaryValues huffmanTree ""
+              binValues = generateBinaryValueList huffmanTree ""
               binaryString = encodeOriginalWord word binValues
 
-huffmanDecode :: (Tree Int, String) -> String
+-- декодиране по подадено Хъфманово дърво и бинарен низ
+huffmanDecode :: (Tree a, String) -> String
 huffmanDecode (originalTree, s) = helper (originalTree, s)
-    where helper :: (Tree Int, String) -> String
+    where helper :: (Tree a, String) -> String
           helper (Empty, _) = ""
           helper (Node root l r, "") = ""
           helper (Leaf c _, "") = [c]
@@ -76,16 +83,4 @@ huffmanDecode (originalTree, s) = helper (originalTree, s)
           helper (Node root l r, x:xs)
             | x == '0' = helper (l, xs)
             | x == '1' = helper (r, xs)
-            | otherwise = "error"
-
--- >>> huffmanDecode (huffmanEncode "abracadabra") 
--- "abracadabra"
-
--- >>> huffmanEncode "abracadabra"
--- ((Tree 11 ((Tree 6 ((Tree 4 ((Tree 2 (Leaf 1 'c') (Leaf 1 'd'))) (Leaf 2 'b'))) (Leaf 2 'r'))) (Leaf 5 'a')),"10010110000100011001011")
-
--- >>> createHuffmanTreeFromList $ createLeafList $ generateList "abracadabra" []
--- (Tree 11 ((Tree 6 ((Tree 4 ((Tree 2 (Leaf 1 'c') (Leaf 1 'd'))) (Leaf 2 'b'))) (Leaf 2 'r'))) (Leaf 5 'a'))
-
--- >>> createBinaryValues ( createHuffmanTreeFromList $ createLeafList $ generateList "abracadabra" []) ""
--- [('c',"0000"),('d',"0001"),('b',"001"),('r',"01"),('a',"1")]
+            | otherwise = error "Invalid string!"
