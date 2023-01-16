@@ -34,10 +34,10 @@ removeMin _ [] = []
 removeMin a (x:xs) = if a == x then xs
     else x : removeMin a xs
 
-huffmanTree :: [Tree Int] -> Tree Int
-huffmanTree [] = Empty
-huffmanTree [a] = a
-huffmanTree list = huffmanTree $ Node (root min1 + root min2) min1 min2 : removeMin min2 rest
+createHuffmanTreeFromList :: [Tree Int] -> Tree Int
+createHuffmanTreeFromList [] = Empty
+createHuffmanTreeFromList [a] = a
+createHuffmanTreeFromList list = createHuffmanTreeFromList $ Node (root min1 + root min2) min1 min2 : removeMin min2 rest
     where min1 = minimum list
           min2 = minimum rest
           rest = removeMin min1 list
@@ -60,17 +60,32 @@ encodeOriginalWord word (x:xs) = encodeOriginalWord (replaceLetter x word) xs
 -- трябва да взима и предикат за сравнение
 huffmanEncode :: String -> (Tree Int, String)
 huffmanEncode "" = (Empty, [])
-huffmanEncode word = (huffTree, binaryString)
+huffmanEncode word = (huffmanTree, binaryString)
         where frequencyList = generateList word ""
-              huffTree = huffmanTree $ createLeafList frequencyList
-              binValues = createBinaryValues huffTree ""
+              huffmanTree = createHuffmanTreeFromList $ createLeafList frequencyList
+              binValues = createBinaryValues huffmanTree ""
               binaryString = encodeOriginalWord word binValues
+
+huffmanDecode :: (Tree Int, String) -> String
+huffmanDecode (originalTree, s) = helper (originalTree, s)
+    where helper :: (Tree Int, String) -> String
+          helper (Empty, _) = ""
+          helper (Node root l r, "") = ""
+          helper (Leaf c _, "") = [c]
+          helper (Leaf c _, str) = c : helper (originalTree, str)
+          helper (Node root l r, x:xs)
+            | x == '0' = helper (l, xs)
+            | x == '1' = helper (r, xs)
+            | otherwise = "error"
+
+-- >>> huffmanDecode (huffmanEncode "abracadabra") 
+-- "abracadabra"
 
 -- >>> huffmanEncode "abracadabra"
 -- ((Tree 11 ((Tree 6 ((Tree 4 ((Tree 2 (Leaf 1 'c') (Leaf 1 'd'))) (Leaf 2 'b'))) (Leaf 2 'r'))) (Leaf 5 'a')),"10010110000100011001011")
 
--- >>> huffmanTree $ createLeafList $ generateList "abracadabra" []
+-- >>> createHuffmanTreeFromList $ createLeafList $ generateList "abracadabra" []
 -- (Tree 11 ((Tree 6 ((Tree 4 ((Tree 2 (Leaf 1 'c') (Leaf 1 'd'))) (Leaf 2 'b'))) (Leaf 2 'r'))) (Leaf 5 'a'))
 
--- >>> createBinaryValues ( huffmanTree $ createLeafList $ generateList "abracadabra" []) ""
+-- >>> createBinaryValues ( createHuffmanTreeFromList $ createLeafList $ generateList "abracadabra" []) ""
 -- [('c',"0000"),('d',"0001"),('b',"001"),('r',"01"),('a',"1")]
