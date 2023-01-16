@@ -1,4 +1,3 @@
-
 generateList :: String -> [Char] -> [(Char, Int)]
 generateList "" _ = []
 generateList (x:xs) res
@@ -6,15 +5,8 @@ generateList (x:xs) res
     | otherwise = generateList xs res
   where count a str = length (filter (== a) str)
 
-
--- >>> generateList "abracadabra" []
--- [('a',5),('b',2),('r',2),('c',1),('d',1)]
-
 data Tree a = Empty | Node {root :: a, leftTree :: Tree a, rightTree :: Tree a} | Leaf {c :: Char,  root :: a}
     deriving Read
-
---leaf :: a -> Char -> Tree a
---leaf a c = Leaf a c
 
 instance Show a => Show (Tree a) where
     show Empty = "Empty"
@@ -33,20 +25,14 @@ instance Ord a => Ord (Tree a) where
     (Leaf _ a) `compare` (Leaf _ b) = a `compare` b
     _ `compare` _ = LT
 
-
 createLeafList :: [(Char, Int)] -> [Tree Int]
 createLeafList [] = []
 createLeafList lst = map (uncurry Leaf) lst
-
 
 removeMin :: Eq a => Tree a -> [Tree a] -> [Tree a]
 removeMin _ [] = []
 removeMin a (x:xs) = if a == x then xs
     else x : removeMin a xs
-
---minIdk :: [Tree Int] -> Tree Int
---minIdk [] = Empty
---minIdk (x:xs) 
 
 huffmanTree :: [Tree Int] -> Tree Int
 huffmanTree [] = Empty
@@ -71,6 +57,7 @@ encodeOriginalWord word (x:xs) = encodeOriginalWord (replaceLetter x word) xs
             | fst c == x = snd c ++ replaceLetter c xs
             | otherwise = x : replaceLetter c xs
 
+-- трябва да взима и предикат за сравнение
 huffmanEncode :: String -> (Tree Int, String)
 huffmanEncode "" = (Empty, [])
 huffmanEncode word = (huffTree, binaryString)
@@ -82,18 +69,8 @@ huffmanEncode word = (huffTree, binaryString)
 -- >>> huffmanEncode "abracadabra"
 -- ((Tree 11 ((Tree 6 ((Tree 4 ((Tree 2 (Leaf 1 'c') (Leaf 1 'd'))) (Leaf 2 'b'))) (Leaf 2 'r'))) (Leaf 5 'a')),"10010110000100011001011")
 
-
 -- >>> huffmanTree $ createLeafList $ generateList "abracadabra" []
 -- (Tree 11 ((Tree 6 ((Tree 4 ((Tree 2 (Leaf 1 'c') (Leaf 1 'd'))) (Leaf 2 'b'))) (Leaf 2 'r'))) (Leaf 5 'a'))
 
 -- >>> createBinaryValues ( huffmanTree $ createLeafList $ generateList "abracadabra" []) ""
 -- [('c',"0000"),('d',"0001"),('b',"001"),('r',"01"),('a',"1")]
-
--- >>> removeMin 1 $ createLeafList $ generateList "abracadabra" []
--- [(Tree 5 (Empty) (Empty)),(Tree 2 (Empty) (Empty)),(Tree 2 (Empty) (Empty)),(Tree 1 (Empty) (Empty))]
-
--- >>> createLeafList (generateList "abracadabra" [])
--- [(Tree 5 (Empty) (Empty)),(Tree 2 (Empty) (Empty)),(Tree 2 (Empty) (Empty)),(Tree 1 (Empty) (Empty)),(Tree 1 (Empty) (Empty))]
-
--- >>> map leaf [5,2,2,1,1]
--- [(Tree 5 (Empty) (Empty)),(Tree 2 (Empty) (Empty)),(Tree 2 (Empty) (Empty)),(Tree 1 (Empty) (Empty)),(Tree 1 (Empty) (Empty))]
