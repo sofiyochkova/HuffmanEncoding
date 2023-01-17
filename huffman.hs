@@ -7,7 +7,7 @@ generateFrequencyList (x:xs) res
   where count a str = length (filter (== a) str)
 
 data Tree a = Empty | Node {root :: a, leftTree :: Tree a, rightTree :: Tree a} | Leaf {c :: Char,  root :: a}
-   deriving (Show, Read) 
+   deriving (Show, Read)
 
 -- алтернативно извеждане на дървото
 parseTree :: (Show a) => Tree a -> String
@@ -25,7 +25,7 @@ instance Ord a => Ord (Tree a) where
     Empty `compare` Empty = EQ
     (Node r1 _ _) `compare` (Node r2 _ _) = r1 `compare` r2
     (Leaf _ a) `compare` (Leaf _ b) = a `compare` b
-    _ `compare` _ = LT 
+    _ `compare` _ = LT
 
 -- от създадения честотен списък правим списък от отделните листа на дървото
 createLeafList :: [(Char, a)] -> [Tree a]
@@ -56,7 +56,7 @@ generateBinaryValueList (Leaf c root) str = [(c, str)]
 encodeOriginalWord :: String -> [(Char, String)] -> String
 encodeOriginalWord "" _ = ""
 encodeOriginalWord word [] = word
-encodeOriginalWord word (x:xs) = encodeOriginalWord (replaceLetter x word) xs 
+encodeOriginalWord word (x:xs) = encodeOriginalWord (replaceLetter x word) xs
     where replaceLetter :: (Char, String) -> String -> String
           replaceLetter _ "" = ""
           replaceLetter c (x:xs)
@@ -84,3 +84,22 @@ huffmanDecode (originalTree, s) = helper (originalTree, s)
             | x == '0' = helper (l, xs)
             | x == '1' = helper (r, xs)
             | otherwise = error "Invalid string!"
+
+-- кодиране на дума, прочетена от файл
+encodeFromFile :: String -> IO ()
+encodeFromFile filename = do
+    contents <- readFile filename
+    let word = takeWhile (\c -> c /= ' ' && c /= '\n') contents
+    let result = huffmanEncode word
+    writeFile (takeWhile (/= '.') filename ++ "_output.txt") (show (fst result) ++ "\n" ++ snd result)
+
+-- декодиране на дума от файл
+decodeFromFile :: String -> IO ()
+decodeFromFile filename = do
+    contents <- readFile filename
+    let tree = readTree (head (lines contents))
+    let encoded = head $ tail (lines contents)
+    let result = huffmanDecode (tree, encoded)
+    writeFile (takeWhile (/= '.') filename ++ "_decoded.txt") (show result)
+        where readTree :: String -> Tree Int
+              readTree = read
